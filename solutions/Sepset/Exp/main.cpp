@@ -11,7 +11,7 @@ void main() {
   for (int i = 0; i < numb; i++) {
     preparation(&set, n, m);
     count = 0;
-    countino(&set, count, n, m);
+    countino(&set, &count, n, m);
     result += count;
   }
   printf("%f\n", result / numb);

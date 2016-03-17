@@ -16,7 +16,7 @@ void Sepset::singleton(int i) {
   if (i < 0 || i > size || val[i] != -1)
     throw "wrong index";
   val[i] = i;
-  h[i] = 0;	
+  h[i] = 0;
 }
 
 void Sepset::merge(int i, int j) {
@@ -32,7 +32,8 @@ void Sepset::merge(int i, int j) {
     if (a != b) {
       if (h[a] < h[b])
         val[a] = b;
-      else {
+      else
+	  {
         val[b] = a;
         if (h[a] == h[b])
           ++h[a];
@@ -42,10 +43,10 @@ void Sepset::merge(int i, int j) {
 }
 
 int Sepset::poisk(int i) {
-  if (i < 0 || i > size || val[i] == -1) 
+  if (i < 0 || i > size || val[i] == -1)
     throw "wrong index";
   while (val[i] != i)
-    i = val[i];	
+    i = val[i];
   return val[i];
 }
 

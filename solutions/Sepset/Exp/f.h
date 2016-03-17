@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void countino(Sepset *set, int *co, int n, int m); 
+void countino(Sepset *set, int *co, int n, int m);
 void preparation(Sepset *set, int n, int m);
 
-#endif
+#endif  // SOLUTIONS_SEPSET_EXP_F_H_

@@ -15,4 +15,4 @@ class Sepset {
   ~Sepset();
 };
 
-#endif
+#endif  // SOLUTIONS_SEPSET_SEPSET_SEPSET_H_

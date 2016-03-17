@@ -32,8 +32,7 @@ void Sepset::merge(int i, int j) {
     if (a != b) {
       if (h[a] < h[b])
         val[a] = b;
-      else
-	  {
+      else {
         val[b] = a;
         if (h[a] == h[b])
           ++h[a];

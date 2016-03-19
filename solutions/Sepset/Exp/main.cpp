@@ -12,7 +12,7 @@ void main() {
     preparation(&set, n, m);
     count = 0;
     countino(&set, &count, n, m);
-	result += count / (m * n);
+    result += count / (m * n);
   }
   printf("%f\n", result / numb);
 }

@@ -1,6 +1,6 @@
 #include "f.h"
 
-void countino(Sepset *set, int *co, int n, int m) {
+void countino(Sepset *set, double *co, int n, int m) {
   bool f = false;
   int x;
   int y;

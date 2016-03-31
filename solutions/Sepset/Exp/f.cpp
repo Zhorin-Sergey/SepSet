@@ -4,7 +4,7 @@ void countino(Sepset *set, double *co, int n, int m) {
   bool f = false;
   int x;
   int y;
-  srand(time(0));
+  srand(666);
   int coord;
   while (f == false && (*co) < n*m) {
     do {

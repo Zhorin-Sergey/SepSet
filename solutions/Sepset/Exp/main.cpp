@@ -1,7 +1,7 @@
 #include "f.h"
 
 void main() {
-  int numb = 7000;
+  int numb = 700;
   int n = 100;
   int m = 100;
   int size = n*m + 2 * n;

@@ -1,5 +1,5 @@
-#ifndef SOLUTIONS_SEPSET_EXP_F_H_
-#define SOLUTIONS_SEPSET_EXP_F_H_
+#ifndef SOLUTIONS_SEPSET_ZSAMPLE_F_H_
+#define SOLUTIONS_SEPSET_ZSAMPLE_F_H_
 
 #include "Sepset.h"
 #include <ctime>
@@ -9,4 +9,4 @@
 void countino(Sepset *set, double *co, int n, int m);
 void preparation(Sepset *set, int n, int m);
 
-#endif  // SOLUTIONS_SEPSET_EXP_F_H_
+#endif  // SOLUTIONS_SEPSET_ZSAMPLE_F_H_

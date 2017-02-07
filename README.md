@@ -1,195 +1,146 @@
-#include "mpi.h"
-#include "stdio.h"
-#include "stdlib.h"
-int main(int argc, char* argv[]) {
-  MPI_Status status;
+#include <list>
+
+#include <opencv2/opencv.hpp>
+
+#include "utilities.h"
+#include "bow.h"
+#include "Classifier.h"
+
+using namespace cv;
+
+#define train1 "c:/Temp/Zhorin/data/train/indoor-dwelling-train"
+#define train2 "c:/Temp/Zhorin/data/train/indoor-msu-train"
+#define train3 "c:/Temp/Zhorin/data/train/outdoor-blossoms-train"
+#define train4 "c:/Temp/Zhorin/data/train/outdoor-urban-train"
+#define test1 "c:/Temp/Zhorin/data/test/indoor-dwelling-test" 
+#define test2 "c:/Temp/Zhorin/data/test/indoor-msu-test" 
+#define test3 "c:/Temp/Zhorin/data/test/outdoor-blossoms-test"
+#define test4 "c:/Temp/Zhorin/data/test/outdoor-urban-test"
+#define vocsize 100
+
+
+int main(int argc, char **argv)
+{
+  int te1 = 0, te2 = 0, te3 = 0, te4 = 0, tr1 = 0, tr2 = 0, tr3 = 0, tr4 = 0;
+  std::vector<string> filesList;
+  GetFilesInFolder(train1, filesList, tr1);
+  GetFilesInFolder(train2, filesList, tr2);
+  GetFilesInFolder(train3, filesList, tr3);
+  GetFilesInFolder(train4, filesList, tr4);
+  GetFilesInFolder(test1, filesList, te1);
+  GetFilesInFolder(test2, filesList, te2);
+  GetFilesInFolder(test3, filesList, te3);
+  GetFilesInFolder(test4, filesList, te4);
+  
+  int sum = tr1 + te1 + te2 + tr2 + te3 + tr3 + te4 + tr4;
+  int trsum = tr1 + tr2  + tr3 + tr4;
+  int tesum = te1 + te2 +  te3 + te4;
+  std::vector<Mat> descriptors;
+  std::vector<Mat> imgDesc;
+  Mat testSamples(tesum, vocsize, CV_32F);
+  Mat trainSamples(trsum, vocsize, CV_32F);
+ /* Mat trainSampleMask(1, trsum + tesum, CV_8U);
+  for (int i = 0; i < trsum; ++i) {
+    trainSampleMask.at<int>(i) = 1;
+  }
+  for (int i = trsum; i < tesum + trsum; ++i) {
+    trainSampleMask.at<int>(i) = 0;
+  }*/
+  std::vector<std::vector<KeyPoint>> keypoints;
+  keypoints.resize(sum);
+  descriptors.resize(sum);
   int i = 0;
-  int thread_count, rank;
-  int *duff;
-  int m = atoi(argv[1]);
-  int n = atoi(argv[2]);
-  int seed = atoi(argv[3]);
-  int *a = 0;
-  int* b2 = 0;
-  MPI_Datatype anyStructType;
-  int* len = new int[m];
-  MPI_Aint* pos = new MPI_Aint[m];
-  MPI_Datatype* typ = new MPI_Datatype[m];
-
-   //printf("%i ", m);
-
-
-  i = 0;
-  int segmentSize, bufferSize;
-  double starttime, endtime;
-  MPI_Init(&argc, &argv);
-  MPI_Comm_size(MPI_COMM_WORLD, &thread_count);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  segmentSize = n / thread_count;
-  bufferSize = segmentSize;
-  int* buff = new int[2 * segmentSize];
-  while (i<m) {
-    len[i] = segmentSize;
-    pos[i] = i*n*sizeof(int);
-    typ[i] = MPI_INT;
+  Mat voc;
+  while (i < sum)
+  {
+    DetectKeypointsOnImage(filesList[i], keypoints[i], descriptors[i]);
     i++;
   }
+  printf("DetectKeypointsOnImage\n");
   i = 0;
-  MPI_Type_struct(m, len, pos, typ, &anyStructType);
-  MPI_Type_commit(&anyStructType);
-  i = 0;
-  if (rank == 0) {
-    int k = 0;
-    a = new int[n*m];
-    b2 = new int[n];
-    srand(seed);
-	int l = 1;
-    while (k<m*n) {
-      a[k] = rand() % 10;
-	  if(n*m < 25) {
-        printf("%i ", a[k]);
-		if(k == (n*l) -1) {
-			printf(" \n");
-			l++;
-		}
-	  }
-	k++;
-	}
-	printf(" \n");
-    k = 0;
-    while (k<n) {
-      b2[k] = 0;
-      k++;
-    }
-    k = 0;
-    int j = 0;
-    starttime = MPI_Wtime();
-    while (k < n) {
-      j = k;
-      while (j < n*m){
-        (b2[(k)]) += a[j];
-        j = j + n;
-      }
-      k = k + 1;
-    }
-    endtime = MPI_Wtime();
-    k = 0;
-    while (k<n) {
-     // printf("%i ", b2[k]);
-      k++;
-    }
-    printf("%f\n", endtime - starttime);
+  voc = BuildVocabulary(descriptors, vocsize, tr1 + tr2 + tr3 + tr4);
+  printf("BuildVocabulary\n");
+  while (i < trsum)
+  {
+    ComputeImgDescriptor(filesList[i], voc, trainSamples.row(i));
+    i++;
   }
-  if (rank == 0) {
-   
-    i = 0;
-    duff = new int[segmentSize*m];
-    while (i<segmentSize*m) {
-     
-      duff[i] = 0;
-      i++;
-    }
-    i = 1;
-    starttime = MPI_Wtime();
-    while (i < thread_count) {
-      MPI_Send(a + (i)*segmentSize, 1, anyStructType, i, 0, MPI_COMM_WORLD);
-      i++;
-    }
-    i = 0;
+  int j = 0;
+    while (i < sum)
+  {
+    ComputeImgDescriptor(filesList[i], voc, testSamples.row(j));
+    i++;
+	j++;
   }
-  else {
-    duff = new int[segmentSize*m];
-    i = 0;
-    while (i<segmentSize*m) {
-      duff[i] = 0;
-      i++;
-    }
-    i = 0;
-    MPI_Recv(duff, segmentSize*m, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
+  //samples.copyTo(trainSamples,trainSampleMask);
+   printf("ComputeImgDescriptor\n");
+  Mat trainLabels(trsum, 1, CV_32S);
+  Mat testLabels(tesum, 1, CV_32S);
+  int ind = 0;
+  for (int j = 0 ; j < tr1; j++, ind++)
+    trainLabels.at<int>(ind) = 1;
+  for (int j = 0; j < tr2; j++, ind++)
+    trainLabels.at<int>(ind) = 2;
+  for (int j = 0; j < tr3; j++, ind++)
+    trainLabels.at<int>(ind) = 3;
+  for (int j = 0; j < tr4; j++, ind++)
+    trainLabels.at<int>(ind) = 4;
+  ind = 0;
+  for (int j = 0; j < te1; j++, ind++)
+    testLabels.at<int>(ind) = 1;
+  for (int j = 0; j < te2; j++, ind++)
+    testLabels.at<int>(ind) = 2;
+  for (int j = 0; j < te3; j++, ind++)
+    testLabels.at<int>(ind) = 3;
+  for (int j = 0; j < te4; j++, ind++)
+    testLabels.at<int>(ind) = 4;
+   printf("labels\n");
+  CvRTrees rf;
+  
+  /*Mat trainSampleMask(1, trsum + tesum, CV_8U);
+  for (int i = 0; i < trsum; ++i) {
+    trainSampleMask.at<int>(i) = 1;
+  }
+  for (int i = trsum; i < tesum + trsum; ++i) {
+    trainSampleMask.at<int>(i) = 0;
+  }*/
+/*   Mat trainSampleMask(1, trsum, CV_32S);
+  for (int i = 0; i < trsum; ++i) {
+    trainSampleMask.at<int>(i) = i;
+  }*/
+  CvRTParams params = CvRTParams(); 
+  //params.max_depth = 5;
+ // params.min_sample_count = 0; 
+  //params.calc_var_importance = false; 
+  params.term_crit.type = CV_TERMCRIT_ITER;
+  params.term_crit.max_iter = 10;
+  //Mat varIdx(1, vocsize + 1, CV_8U, Scalar(1));
+  //varIdx.at<int>(vocsize) = 0;
+  Mat varTypes(1, vocsize + 1, CV_8UC1);
+  for (int i = 0; i < vocsize; i++) {    
+    varTypes.at<uchar>(i) = CV_VAR_ORDERED;
+  }
+  varTypes.at<uchar>(vocsize) = CV_VAR_CATEGORICAL;
+  rf.train(trainSamples, CV_ROW_SAMPLE, trainLabels, Mat(), Mat(), varTypes, Mat(), params);
+  printf("TrainClassifier\n");
+  //rf = TrainClassifier(samples, labels, trsum, tesum, vocsize);
+  rf.save("model-rf.yml", "simpleRTreesModel");
+   printf("save\n");
+  float trainError = 0.0f;
+  for (int i = 0; i < trsum; ++i) {
+    int prediction = (int)(rf.predict(trainSamples.row(i))); 
+	printf("%i ",prediction);
+    trainError += (trainLabels.at<int>(i) != prediction); 
   } 
-  i = 0;
-  while (i<segmentSize*m) {
-  // printf("%i ", duff[i]);
-    i++;
-  }
- //printf("rank %i \n", rank);
-  
-  if (rank > 0) {
-    i = 0;
-    int x = 0;
-    while (i < 2*segmentSize) {
-      int sum = 0;
-      int j = x;
-      while (j < segmentSize*m) {
-        sum += duff[j];
-        j = j + segmentSize;
-      }
-     // printf("sum = %i \n", sum);
-      buff[i] = rank*segmentSize + x;
-      buff[i + 1] = sum;
-      i= i+2;
-      x++;
-    }
-    i = 0;
-    MPI_Send(buff, 2 * segmentSize, MPI_INT, 0, 0, MPI_COMM_WORLD);
-  }
-  if (rank == 0) {
-    int* b = new int[n];
-    i = 0;
-    while (i<n) {
-      b[i] = 0;
-      i++;
-    }
-    i = 0;
-    while (i < segmentSize) {
-      int j = i;
-      while (j < m*n) {
-        b[i] += a[j];
-        j = j + n;
-      }
-      i++;
-    }
-    i = 0;
-   // printf("%i ", b[0]);
-    
-    for (i = 1; i < thread_count; i++) {
-      MPI_Recv(buff, 2 * segmentSize, MPI_INT, i, 0, MPI_COMM_WORLD, &status);
-      for (int j = 0; j < 2*segmentSize; j = j+2)
-        b[buff[j]] = buff[j + 1];
-    }
-    i = 0;
-
-    if (thread_count*segmentSize < n){
-      i = thread_count*segmentSize;
-      while (i < n) {
-        int j = i;
-        while (j < m*n) {
-          b[i] += a[j];
-          j = j + n;
-        }
-        i++;
-      }
-      
-    }
-	endtime = MPI_Wtime();
-    i = 0;
-    int flag = 1;
-	if(n*m < 25)
-      while (i<n) {
-        printf("%i ", b[i]);
-		i++;
-	  }
-	      printf(" \n");
-	  i = 0;
-    while (i<n) {
-      if (b[i] != b2[i])
-        flag = 0;
-      i++;
-    }
-    printf("%i \n", flag);
-    printf("%f\n", endtime - starttime);
-  }
-  
-  MPI_Finalize();
+  trainError /= float(trsum);
+  printf("\n");
+  float testError = 0.0f; 
+  for (int i = 0; i <tesum; ++i) {
+    int prediction = (int)(rf.predict(testSamples.row(i)));
+	printf("%i ",prediction);
+    testError += (testLabels.at<int>(i) != prediction);
+  }   
+  printf("\n");
+  testError /= float(sum - trsum);
+    printf("train error = %.4f\ntest error = %.4f\n", trainError, testError);
   return 0;
-}
